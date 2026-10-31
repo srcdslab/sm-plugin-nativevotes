@@ -1,0 +1,12 @@
+"Phrases"
+{
+	"NativeVotes Revote"
+	{
+		"chi"	"正在重新投票..."
+	}
+	
+	"NativeVotes Revote No Time"
+	{
+		"chi"	"没有足够的时间重新投票。"
+	}
+}

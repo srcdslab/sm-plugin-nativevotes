@@ -2,7 +2,7 @@
 {
 	"NativeVotes Revote"
 	{
-		"es"	"votar de nuevo..."
+		"es"	"Votando de nuevo..."
 	}
 	
 	"NativeVotes Revote No Time"
