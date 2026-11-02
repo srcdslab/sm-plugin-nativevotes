@@ -209,6 +209,8 @@ public int KickVoteHandler(NativeVote vote, MenuAction action, int param1, int p
 			}
 		}
 	}
+	
+	return 0;
 }
 
 NativeVotesType GetKickVoteTypeFromKickType(NativeVotesKickType kickType, char[] sKickType, int maxlength)

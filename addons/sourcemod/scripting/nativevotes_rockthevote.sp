@@ -50,7 +50,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define VERSION "1.8.0 beta 1"
+#define VERSION "1.8.0 beta 2"
 
 public Plugin myinfo =
 {
@@ -341,6 +341,8 @@ void AttemptRTV(int client, bool isVoteMenu=false)
 public Action Timer_DelayRTV(Handle timer)
 {
 	g_RTVAllowed = true;
+	
+	return Plugin_Continue;
 }
 
 void StartRTV()

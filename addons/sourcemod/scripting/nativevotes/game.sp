@@ -941,6 +941,8 @@ public Action Game_ResetVote(Handle timer)
 			TF2CSGO_ResetVote();
 		}
 	}
+	
+	return Plugin_Continue;
 }
 
 void Game_VoteYes(int client)
