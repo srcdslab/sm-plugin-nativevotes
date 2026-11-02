@@ -36,21 +36,22 @@
 #include <sdktools>
 
 #pragma semicolon 1
+#pragma newdecls required
 
-#define VERSION "1.1"
+#define VERSION "1.1.1"
 
-new bool:g_bVoteActive = false;
+bool g_bVoteActive = false;
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "CSGO VoteStart Multiple Test",
 	author = "Powerlord",
 	description = "Test CS:GO VoteStart Panels",
 	version = VERSION,
 	url = "https://forums.alliedmods.net/showthread.php?t=208008"
-}
+};
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	if (GetEngineVersion() != Engine_CSGO)
 	{
@@ -60,7 +61,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("core.phrases");
 	
@@ -71,21 +72,21 @@ public OnPluginStart()
 	AddCommandListener(Listener_Vote, "vote");
 }
 
-public Action:Cmd_VoteMulti(client, args)
+public Action Cmd_VoteMulti(int client, int args)
 {
-	new entity = FindEntityByClassname(-1, "vote_controller");
+	int entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
 		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", false);
 		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 3);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
-		for (new i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 	}
 	
-	new Handle:optionsEvent = CreateEvent("vote_options");
+	Event optionsEvent = CreateEvent("vote_options");
 	
 	SetEventString(optionsEvent, "option1", "de_dust");
 	SetEventString(optionsEvent, "option2", "de_dust2");
@@ -108,15 +109,15 @@ public Action:Cmd_VoteMulti(client, args)
 	return Plugin_Handled;
 }
 
-public Action:Timer_StartMultiVote(Handle:timer, any:userid)
+public Action Timer_StartMultiVote(Handle timer, any userid)
 {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if (client <= 0 && client > MaxClients)
 	{
 		return Plugin_Continue;
 	}
 	
-	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
+	Handle voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", 99);
 	PbSetString(voteStart, "disp_str", "#SFUI_vote_nextlevel_choices");
@@ -130,21 +131,21 @@ public Action:Timer_StartMultiVote(Handle:timer, any:userid)
 }
 
 
-public Action:Cmd_VoteYesNo(client, args)
+public Action Cmd_VoteYesNo(int client, int args)
 {
-	new entity = FindEntityByClassname(-1, "vote_controller");
+	int entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
 		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", true);
 		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", 2);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
-		for (new i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 	}
 	
-	new Handle:optionsEvent = CreateEvent("vote_options");
+	Event optionsEvent = CreateEvent("vote_options");
 	SetEventString(optionsEvent, "option1", "Yes");
 	SetEventString(optionsEvent, "option2", "No");
 	SetEventString(optionsEvent, "option3", "");
@@ -166,15 +167,15 @@ public Action:Cmd_VoteYesNo(client, args)
 	return Plugin_Handled;
 }
 
-public Action:Timer_StartYesNoVote(Handle:timer, any:userid)
+public Action Timer_StartYesNoVote(Handle timer, any userid)
 {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if (client <= 0 && client > MaxClients)
 	{
 		return Plugin_Continue;
 	}
 	
-	new Handle:voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
+	Handle voteStart = StartMessageAll("VoteStart", USERMSG_RELIABLE);
 	PbSetInt(voteStart, "team", -1);
 	PbSetInt(voteStart, "ent_idx", client);
 	PbSetString(voteStart, "disp_str", "#SFUI_vote_changelevel");
@@ -187,7 +188,7 @@ public Action:Timer_StartYesNoVote(Handle:timer, any:userid)
 	return Plugin_Stop;
 }
 
-public Action:Cmd_VoteFail(client, args)
+public Action Cmd_VoteFail(int client, int args)
 {
 	if (g_bVoteActive)
 		VoteFail();
@@ -195,14 +196,14 @@ public Action:Cmd_VoteFail(client, args)
 	return Plugin_Handled;
 }
 
-public Action:Listener_Vote(client, const String:command[], argc)
+public Action Listener_Vote(int client, const char[] command, int argc)
 {
 	if (!g_bVoteActive)
 	{
 		return Plugin_Continue;
 	}
 	
-	new ReplySource:oldSource = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplySource oldSource = SetCmdReplySource(SM_REPLY_TO_CHAT);
 	ReplyToCommand(client, "Caught vote.");
 	
 	VoteFail();
@@ -211,10 +212,10 @@ public Action:Listener_Vote(client, const String:command[], argc)
 	return Plugin_Handled;
 }
 
-VoteFail()
+void VoteFail()
 {
 	g_bVoteActive = false;
-	new Handle:voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
+	Handle voteFailed = StartMessageAll("VoteFailed", USERMSG_RELIABLE);
 	
 	PbSetInt(voteFailed, "team", -1);
 	PbSetInt(voteFailed, "reason", 0);
@@ -223,18 +224,20 @@ VoteFail()
 	CreateTimer(5.0, Timer_ResetData);
 }
 
-public Action:Timer_ResetData(Handle:timer)
+public Action Timer_ResetData(Handle timer)
 {
-	new entity = FindEntityByClassname(-1, "vote_controller");
+	int entity = FindEntityByClassname(-1, "vote_controller");
 	if (entity > -1)
 	{
 		//SetEntProp(entity, Prop_Send, "m_iActiveIssueIndex", -1);
-		for (new i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			SetEntProp(entity, Prop_Send, "m_nVoteOptionCount", 0, _, i);
 		}
 		SetEntProp(entity, Prop_Send, "m_nPotentialVotes", 0);
 		SetEntProp(entity, Prop_Send, "m_iOnlyTeamToVote", -1);
 		SetEntProp(entity, Prop_Send, "m_bIsYesNoVote", true);
-	}	
+	}
+
+	return Plugin_Stop;
 }

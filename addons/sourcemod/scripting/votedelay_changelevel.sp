@@ -33,17 +33,18 @@
 #include <sourcemod>
 #include <sdktools>
 #pragma semicolon 1
+#pragma newdecls required
 
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 #define VOTE_STRING_SIZE					32
 
-new Handle:g_Cvar_Enabled;
-new Handle:g_Cvar_FullRounds;
-new Handle:g_Cvar_Rounds;
+ConVar g_Cvar_Enabled;
+ConVar g_Cvar_FullRounds;
+ConVar g_Cvar_Rounds;
 
-new g_VoteController = -1;
-new g_bUserBuf = false;
+int g_VoteController = -1;
+bool g_bUserBuf = false;
 
 // Stolen from NativeVotes
 enum NativeVotesCallFailType
@@ -69,7 +70,7 @@ enum NativeVotesCallFailType
 	NativeVotesCallFail_KickDuringRound = 18,	/**< TF2: Cannot kick during a round. */
 };
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name			= "Vote Delay: Changelevel",
 	author			= "Powerlord",
 	description		= "Delay vote change until after X rounds have gone by",
@@ -77,11 +78,11 @@ public Plugin:myinfo = {
 	url				= ""
 };
 
-new roundCount = 1;
+int roundCount = 1;
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	new EngineVersion:engine = GetEngineVersion();
+	EngineVersion engine = GetEngineVersion();
 	
 	if (engine != Engine_TF2 && engine != Engine_CSGO)
 	{
@@ -91,7 +92,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("votedelay_changelevel_version", VERSION, "Vote Delay: Changelevel version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	g_Cvar_Enabled = CreateConVar("votedelay_changelevel_enable", "1", "Enable Vote Delay: Changelevel?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
@@ -107,12 +108,12 @@ public OnPluginStart()
 	AutoExecConfig(true, "votedelay_changelevel");
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	roundCount = 1;
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!GameRules_GetProp("m_bWarmupPeriod"))
 	{
@@ -120,7 +121,7 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 }
 
-public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
+public void Event_RoundWin(Event event, const char[] name, bool dontBroadcast)
 {
 	if (GetConVarBool(g_Cvar_FullRounds) && !GetEventInt(event, "full_round"))
 	{
@@ -130,7 +131,7 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 	roundCount++;
 }
 
-public Action:Cmd_CallVote(client, const String:command[], argc)
+public Action Cmd_CallVote(int client, const char[] command, int argc)
 {
 	if (client == 0)
 	{
@@ -142,7 +143,7 @@ public Action:Cmd_CallVote(client, const String:command[], argc)
 		return Plugin_Continue;
 	}
 	
-	decl String:voteCommand[VOTE_STRING_SIZE];
+	char voteCommand[VOTE_STRING_SIZE];
 	GetCmdArg(1, voteCommand, VOTE_STRING_SIZE);
 	
 	if (!StrEqual(voteCommand, "ChangeLevel", false) && !StrEqual(voteCommand, "NextLevel", false))
@@ -150,14 +151,14 @@ public Action:Cmd_CallVote(client, const String:command[], argc)
 		return Plugin_Continue;
 	}
 	
-	new voteRound = GetConVarInt(g_Cvar_Rounds);
+	int voteRound = GetConVarInt(g_Cvar_Rounds);
 	
 	if (roundCount >= voteRound)
 	{
 		return Plugin_Continue;
 	}
 	
-	new ReplySource:source = SetCmdReplySource(SM_REPLY_TO_CHAT);
+	ReplySource source = SetCmdReplySource(SM_REPLY_TO_CHAT);
 	
 	// For lack of a better reason
 	TF2CSGO_CallVoteFail(client, NativeVotesCallFail_Disabled);
@@ -168,11 +169,11 @@ public Action:Cmd_CallVote(client, const String:command[], argc)
 	return Plugin_Stop;
 }
 
-bool:IsNativeVoteInProgress()
+bool IsNativeVoteInProgress()
 {
 	if (CheckVoteController())
 	{
-		new activeIndex = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
+		int activeIndex = GetEntProp(g_VoteController, Prop_Send, "m_iActiveIssueIndex");
 		if (activeIndex > -1)
 		{
 			return true;
@@ -182,9 +183,9 @@ bool:IsNativeVoteInProgress()
 	return false;
 }
 
-bool:CheckVoteController()
+bool CheckVoteController()
 {
-	new entity = -1;
+	int entity = -1;
 	if (g_VoteController != -1)
 	{
 		entity = EntRefToEntIndex(g_VoteController);
@@ -204,18 +205,18 @@ bool:CheckVoteController()
 	return true;
 }
 
-TF2CSGO_CallVoteFail(client, NativeVotesCallFailType:reason, time=0)
+void TF2CSGO_CallVoteFail(int client, NativeVotesCallFailType reason, int time=0)
 {
-	new Handle:callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
+	Handle callVoteFail = StartMessageOne("CallVoteFailed", client, USERMSG_RELIABLE);
 
 	if(g_bUserBuf)
 	{
-		PbSetInt(callVoteFail, "reason", _:reason);
+		PbSetInt(callVoteFail, "reason", view_as<int>(reason));
 		PbSetInt(callVoteFail, "time", time);
 	}
 	else
 	{
-		BfWriteByte(callVoteFail, _:reason);
+		BfWriteByte(callVoteFail, view_as<int>(reason));
 		BfWriteShort(callVoteFail, time);
 	}
 	EndMessage();
