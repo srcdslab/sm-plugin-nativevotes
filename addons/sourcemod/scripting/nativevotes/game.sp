@@ -3151,13 +3151,13 @@ static stock bool TF2_VoteTypeToVoteString(NativeVotesType voteType, char[] vote
 		
 		case NativeVotesType_ClassLimitsOn:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT_ON);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT);
 			valid = true;
 		}
 		
 		case NativeVotesType_ClassLimitsOff:
 		{
-			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT_OFF);
+			strcopy(voteString, maxlength, TF2_VOTE_STRING_CLASSLIMIT);
 			valid = true;
 		}
 		
