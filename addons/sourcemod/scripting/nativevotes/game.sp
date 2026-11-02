@@ -2461,10 +2461,10 @@ stock static void CSGO_DisplayVoteSetup(int client, ArrayList hVoteTypes)
 	{
 		char voteIssue[128];
 		
-		int voteData[CallVoteListData];
-		hVoteTypes.GetArray(i, voteData[0]);
+		CallVoteListData voteData;
+		hVoteTypes.GetArray(i, voteData);
 		
-		Game_OverrideTypeToVoteString(voteData[CallVoteList_VoteType], voteIssue, sizeof(voteIssue));
+		Game_OverrideTypeToVoteString(voteData.VoteType, voteIssue, sizeof(voteIssue));
 		
 		
 		voteSetup.AddString("potential_issues", voteIssue);
@@ -2485,17 +2485,17 @@ static void TF2_DisplayVoteSetup(int client, ArrayList hVoteTypes)
 	{
 		char voteIssue[128];
 		
-		int voteData[CallVoteListData];
-		hVoteTypes.GetArray(i, voteData[0]);
+		CallVoteListData voteData;
+		hVoteTypes.GetArray(i, voteData);
 		
-		Game_OverrideTypeToVoteString(voteData[CallVoteList_VoteType], voteIssue, sizeof(voteIssue));
+		Game_OverrideTypeToVoteString(voteData.VoteType, voteIssue, sizeof(voteIssue));
 		
 		char translation[128];
-		Game_OverrideTypeToTranslationString(voteData[CallVoteList_VoteType], translation, sizeof(translation));
+		Game_OverrideTypeToTranslationString(voteData.VoteType, translation, sizeof(translation));
 		
 		voteSetup.WriteString(voteIssue);
 		voteSetup.WriteString(translation);
-		voteSetup.WriteByte(voteData[CallVoteList_VoteEnabled]);
+		voteSetup.WriteByte(voteData.VoteEnabled);
 	}
 	
 	EndMessage();
@@ -2826,14 +2826,14 @@ static void TF2_AddDefaultVotes(ArrayList hVoteTypes, bool bHideDisabledVotes)
 
 static void VoteTypeSet(ArrayList hVoteTypes, bool bHideDisabledVotes, NativeVotesOverride voteType, bool bEnabled)
 {
-	int voteList[CallVoteListData];
+	CallVoteListData voteList;
 	
 	if (bEnabled || !bHideDisabledVotes)
 	{
-		voteList[CallVoteList_VoteType] = voteType;
-		voteList[CallVoteList_VoteEnabled] = bEnabled;
+		voteList.VoteType = voteType;
+		voteList.VoteEnabled = bEnabled;
 		
-		hVoteTypes.PushArray(voteList[0]);
+		hVoteTypes.PushArray(voteList);
 	}
 }
 

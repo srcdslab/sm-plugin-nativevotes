@@ -67,9 +67,6 @@ EngineVersion g_EngineVersion = Engine_Unknown;
 #define L4D2_VOTE_YES_INDEX					1
 #define L4D2_VOTE_NO_INDEX					0
 
-#define L4DL4D2_COUNT						2
-#define TF2CSGO_COUNT						5
-
 #define MAX_CALLVOTE_SIZE					128
 
 //#define LOG
@@ -124,19 +121,19 @@ StringMap g_MapOverrides;
 bool g_OverridesSet;
 bool g_OverrideNextCallVote[MAXPLAYERS + 1];
 
-enum CallVoteForwards
+enum struct CallVoteForwards
 {
-	Handle:CallVote_Forward,
-	Handle:CallVote_Vis,
+	Handle Forward;
+	Handle Vis;
 }
 
-enum CallVoteListData
+enum struct CallVoteListData
 {
-	NativeVotesOverride:CallVoteList_VoteType,
-	bool:CallVoteList_VoteEnabled,
+	NativeVotesOverride VoteType;
+	bool VoteEnabled;
 }
 
-int g_CallVotes[NativeVotesOverride][CallVoteForwards];
+CallVoteForwards g_CallVotes[NativeVotesOverride];
 
 #include "nativevotes/game.sp"
 
@@ -271,8 +268,8 @@ public void OnPluginStart()
 		// As of 2015-09-28, there are 10 votes for a total of 20 private forwards created here.
 		for (int i = 1; i < sizeof(g_CallVotes); i++)
 		{
-			g_CallVotes[i][CallVote_Forward] = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
-			g_CallVotes[i][CallVote_Vis] = CreateForward(ET_Hook, Param_Cell, Param_Cell);
+			g_CallVotes[i].Forward = CreateForward(ET_Hook, Param_Cell, Param_Cell, Param_String, Param_Cell, Param_Cell);
+			g_CallVotes[i].Vis = CreateForward(ET_Hook, Param_Cell, Param_Cell);
 		}
 		
 		g_OverrideMaps = CreateGlobalForward("NativeVotes_OverrideMaps", ET_Hook, Param_Cell);
@@ -416,7 +413,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 				return Plugin_Handled;
 			}
 
-			ArrayList hVoteTypes = new ArrayList(view_as<int>(CallVoteListData)); // Stores arrays of CallVoteListData
+			ArrayList hVoteTypes = new ArrayList(sizeof(CallVoteListData)); // Stores arrays of CallVoteListData
 			
 			Game_AddDefaultVotes(hVoteTypes);
 
@@ -424,32 +421,32 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			bool overridesPresent = false;
 			for (int i = 1; i < sizeof(g_CallVotes); i++)
 			{
-				if (GetForwardFunctionCount(g_CallVotes[i][CallVote_Forward]) > 0)
+				if (GetForwardFunctionCount(g_CallVotes[i].Forward) > 0)
 				{
 #if defined LOG
 					LogMessage("Found overrides for vote type: %d", i);
 #endif
 					overridesPresent = true;
-					int voteType[CallVoteListData];
+					CallVoteListData voteType;
 
 					int pos = FindVoteInArray(hVoteTypes, view_as<NativeVotesOverride>(i));
 					if (pos > -1)
 					{
-						hVoteTypes.GetArray(pos, voteType[0], sizeof(voteType));
-						voteType[CallVoteList_VoteEnabled] = true;
+						hVoteTypes.GetArray(pos, voteType, sizeof(voteType));
+						voteType.VoteEnabled = true;
 #if defined LOG
 						LogMessage("Forcing vote type to visible: %d", i);
 #endif
-						hVoteTypes.SetArray(pos, voteType[0], sizeof(voteType));
+						hVoteTypes.SetArray(pos, voteType, sizeof(voteType));
 					}
 					else
 					{
 #if defined LOG
 						LogMessage("Creating override for vote type: %d", i);
 #endif
-						voteType[CallVoteList_VoteType] = view_as<NativeVotesOverride>(i);
-						voteType[CallVoteList_VoteEnabled] = true;
-						hVoteTypes.PushArray(voteType[0], sizeof(voteType));
+						voteType.VoteType = view_as<NativeVotesOverride>(i);
+						voteType.VoteEnabled = true;
+						hVoteTypes.PushArray(voteType, sizeof(voteType));
 					}
 				}
 			}
@@ -484,7 +481,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			
 			char argument[PLATFORM_MAX_PATH];
 			
-			if (GetForwardFunctionCount(g_CallVotes[overrideType][CallVote_Forward]) == 0)
+			if (GetForwardFunctionCount(g_CallVotes[overrideType].Forward) == 0)
 			{
 				
 				if (g_MapOverrides != null && 
@@ -511,7 +508,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 #if defined LOG
 			LogMessage("Calling visForward for %s", voteCommand);
 #endif
-			Call_StartForward(g_CallVotes[overrideType][CallVote_Vis]);
+			Call_StartForward(g_CallVotes[overrideType].Vis);
 			Call_PushCell(client);
 			Call_PushCell(overrideType);
 			Call_Finish(result);
@@ -570,7 +567,7 @@ public Action Command_CallVote(int client, const char[] command, int argc)
 			LogMessage("Calling callVoteForward for %s", voteCommand);
 #endif
 			
-			Call_StartForward(g_CallVotes[overrideType][CallVote_Forward]);
+			Call_StartForward(g_CallVotes[overrideType].Forward);
 			Call_PushCell(client);
 			Call_PushCell(overrideType);
 			Call_PushString(argument);
@@ -590,10 +587,10 @@ stock int FindVoteInArray(ArrayList myArray, NativeVotesOverride value)
 	int size = myArray.Length;
 	for (int i = 0; i < size; i++)
 	{
-		int voteData[CallVoteListData];
-		myArray.GetArray(i, voteData[0]);
+		CallVoteListData voteData;
+		myArray.GetArray(i, voteData);
 		
-		if (voteData[CallVoteList_VoteType] == value)
+		if (voteData.VoteType == value)
 		{
 			return i;
 		}
@@ -607,9 +604,9 @@ stock bool IsVoteEnabled(ArrayList myArray, NativeVotesOverride value)
 	int pos = FindVoteInArray(myArray, value);
 	if (pos > -1)
 	{
-		int voteType[CallVoteListData];
-		myArray.GetArray(pos, voteType[0], sizeof(voteType));
-		if (voteType[CallVoteList_VoteEnabled])
+		CallVoteListData voteType;
+		myArray.GetArray(pos, voteType, sizeof(voteType));
+		if (voteType.VoteEnabled)
 			return true;
 	}
 	return false;
@@ -1486,22 +1483,22 @@ void PerformVisChecks(int client, ArrayList hVoteTypes)
 	// Iterate backwards so we can safely remove items
 	for (int i = hVoteTypes.Length - 1; i >= 0; i--)
 	{
-		int voteData[CallVoteListData];
-		hVoteTypes.GetArray(i, voteData[0]);
+		CallVoteListData voteData;
+		hVoteTypes.GetArray(i, voteData);
 		
 		Action hide = Plugin_Continue;
 		
 #if defined LOG
-		LogMessage("Checking visibility forward for %d: %d", voteData[CallVoteList_VoteType], g_CallVotes[voteData[CallVoteList_VoteType]][CallVote_Vis]);
+		LogMessage("Checking visibility forward for %d: %d", voteData.VoteType, g_CallVotes[voteData.VoteType].Vis);
 #endif
-		Call_StartForward(g_CallVotes[voteData[CallVoteList_VoteType]][CallVote_Vis]);
+		Call_StartForward(g_CallVotes[voteData.VoteType].Vis);
 		Call_PushCell(client);
-		Call_PushCell(voteData[CallVoteList_VoteType]);
+		Call_PushCell(voteData.VoteType);
 		Call_Finish(hide);
 		if (hide >= Plugin_Handled)
 		{
 #if defined LOG
-			LogMessage("Hiding vote type %d", voteData[CallVoteList_VoteType]);
+			LogMessage("Hiding vote type %d", voteData.VoteType);
 #endif
 			if (Game_AreDisabledIssuesHidden())
 			{
@@ -1510,8 +1507,8 @@ void PerformVisChecks(int client, ArrayList hVoteTypes)
 			}
 			else
 			{
-				// Arrays are pass by ref, so this should update the one inside the ArrayList
-				voteData[CallVoteList_VoteEnabled] = false;
+				voteData.VoteEnabled = false;
+				hVoteTypes.SetArray(i, voteData);
 			}
 		}
 	}
@@ -2424,11 +2421,11 @@ public int Native_RegisterVoteCommand(Handle plugin, int numParams)
 		return;
 	}
 	
-	AddToForward(g_CallVotes[overrideType][CallVote_Forward], plugin, callVoteHandler);
+	AddToForward(g_CallVotes[overrideType].Forward, plugin, callVoteHandler);
 	
 	if (visHandler != INVALID_FUNCTION)
 	{
-		AddToForward(g_CallVotes[overrideType][CallVote_Vis], plugin, visHandler);
+		AddToForward(g_CallVotes[overrideType].Vis, plugin, visHandler);
 	}
 }
 
@@ -2451,11 +2448,11 @@ public int Native_UnregisterVoteCommand(Handle plugin, int numParams)
 		return;
 	}
 	
-	RemoveFromForward(g_CallVotes[overrideType][CallVote_Forward], plugin, callVoteHandler);
+	RemoveFromForward(g_CallVotes[overrideType].Forward, plugin, callVoteHandler);
 
 	if (visHandler != INVALID_FUNCTION)
 	{
-		RemoveFromForward(g_CallVotes[overrideType][CallVote_Vis], plugin, visHandler);
+		RemoveFromForward(g_CallVotes[overrideType].Vis, plugin, visHandler);
 	}
 }
 
