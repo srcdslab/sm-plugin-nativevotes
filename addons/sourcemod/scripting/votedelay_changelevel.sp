@@ -35,7 +35,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define VERSION "1.0.2"
+#define VERSION "1.0.3"
 
 #define VOTE_STRING_SIZE					32
 
